@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lagrange.Core", "Lagrange.Core\Lagrange.Core.csproj", "{DEC7490B-BAF9-43D7-99D2-195804C2CB70}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lagrange.Core.Test", "Lagrange.Core.Test\Lagrange.Core.Test.csproj", "{11E31EFF-0EB8-40B3-AED7-3B262A004F8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lagrange.Codec", "Lagrange.Codec\Lagrange.Codec.csproj", "{3AB8C869-44DC-4F71-BA1F-50C19F124A1A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lagrange.Core.Runner", "Lagrange.Core.Runner\Lagrange.Core.Runner.csproj", "{CEB9D300-9337-420E-B2BD-772399D84051}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DEC7490B-BAF9-43D7-99D2-195804C2CB70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEC7490B-BAF9-43D7-99D2-195804C2CB70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEC7490B-BAF9-43D7-99D2-195804C2CB70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEC7490B-BAF9-43D7-99D2-195804C2CB70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11E31EFF-0EB8-40B3-AED7-3B262A004F8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11E31EFF-0EB8-40B3-AED7-3B262A004F8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11E31EFF-0EB8-40B3-AED7-3B262A004F8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11E31EFF-0EB8-40B3-AED7-3B262A004F8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AB8C869-44DC-4F71-BA1F-50C19F124A1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AB8C869-44DC-4F71-BA1F-50C19F124A1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AB8C869-44DC-4F71-BA1F-50C19F124A1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AB8C869-44DC-4F71-BA1F-50C19F124A1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CEB9D300-9337-420E-B2BD-772399D84051}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEB9D300-9337-420E-B2BD-772399D84051}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEB9D300-9337-420E-B2BD-772399D84051}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEB9D300-9337-420E-B2BD-772399D84051}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
