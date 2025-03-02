@@ -23,7 +23,7 @@ internal class PacketContext(BotContext context)
         {
             ReadOnlyMemory<byte> frame;
             
-            switch (packet.RequestType)
+            switch (options.RequestType)
             {
                 case RequestType.D2Auth:
                 {
@@ -49,7 +49,7 @@ internal class PacketContext(BotContext context)
                 }
                 default:
                 {
-                    throw new InvalidOperationException($"Unknown RequestType: {packet.RequestType}");
+                    throw new InvalidOperationException($"Unknown RequestType: {options.RequestType}");
                 }
             }
             

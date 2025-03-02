@@ -2,10 +2,8 @@ using System.Threading.Tasks.Sources;
 
 namespace Lagrange.Core.Internal.Packets.Struct;
 
-internal readonly struct SsoPacket(RequestType type, string command, int sequence, int retCode, string extra)
+internal readonly struct SsoPacket(string command, int sequence, int retCode, string extra)
 {
-    public RequestType RequestType { get; } = type;
-    
     public ReadOnlyMemory<byte> Data { get; }
 
     public string Command { get; } = command;
@@ -16,8 +14,7 @@ internal readonly struct SsoPacket(RequestType type, string command, int sequenc
 
     public int Sequence { get; } = sequence;
 
-    public SsoPacket(RequestType type, string command, ReadOnlyMemory<byte> data, int sequence) : 
-        this(type, command, sequence, 0, string.Empty) => Data = data;
+    public SsoPacket(string command, ReadOnlyMemory<byte> data, int sequence) : this(command, sequence, 0, string.Empty) => Data = data;
 }
 
 internal class SsoPacketValueTaskSource : IValueTaskSource<SsoPacket>

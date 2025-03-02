@@ -4,7 +4,7 @@ namespace Lagrange.Core.Internal.Services;
 
 internal interface IService
 {
-    public Task<ProtocolEvent?> Parse(ReadOnlyMemory<byte> input, BotContext context);
+    public ValueTask<ProtocolEvent?> Parse(ReadOnlyMemory<byte> input, BotContext context);
     
     public Task<ReadOnlyMemory<byte>> Build(ProtocolEvent input, BotContext context);
 }

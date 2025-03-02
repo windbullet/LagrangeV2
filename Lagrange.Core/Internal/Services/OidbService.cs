@@ -11,7 +11,7 @@ internal abstract class OidbService<T, TRequest, TResponse> : BaseService<T> whe
     
     protected abstract Task<TResponse> ProcessResponse(TResponse response, BotContext context);
     
-    protected override Task<ProtocolEvent?> Parse(ReadOnlyMemory<byte> input, BotContext context)
+    protected override ValueTask<ProtocolEvent?> Parse(ReadOnlyMemory<byte> input, BotContext context)
     {
         throw new NotImplementedException();
     }
