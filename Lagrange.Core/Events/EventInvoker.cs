@@ -71,6 +71,8 @@ public class EventInvoker(BotContext context)
 
     internal void PostEvent<T>(T @event) where T : EventBase => Task.Run(async () =>
     {
+        await context.EventContext.HandleOutgoingEvent(@event);
+        
         try
         {
             if (_actions.TryGetValue(typeof(T), out var @delegate))

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Lagrange.Core.Internal.Services;
 using Lagrange.Core.Utility.Binary;
 using Lagrange.Core.Utility.Cryptography;
@@ -8,7 +10,7 @@ internal class ServicePacker(BotContext context) : StructBase(context)
 {
     private static readonly ReadOnlyMemory<byte> EmptyD2Key = new byte[16];
     
-    public ReadOnlyMemory<byte> BuildProtocol12(ref BinaryPacket sso, ServiceOptions options)
+    public ReadOnlyMemory<byte> BuildProtocol12(BinaryPacket sso, ServiceAttribute options)
     {
         var cipher = options.EncryptType switch
         {
@@ -29,14 +31,14 @@ internal class ServicePacker(BotContext context) : StructBase(context)
         else writer.Write(4);
         writer.Write((byte)0);
         writer.Write(Keystore.Uin.ToString(), Prefix.Int32 | Prefix.WithPrefix);
-        writer.Write(cipher, Prefix.Int32 | Prefix.WithPrefix);
+        writer.Write(cipher);
         
         writer.ExitLengthBarrier<int>(true);
         
         return writer.ToArray();
     }
 
-    public ReadOnlyMemory<byte> BuildProtocol13(ref SsoPacket sso, ref BinaryPacket payload, ServiceOptions options)
+    public ReadOnlyMemory<byte> BuildProtocol13(SsoPacket sso, BinaryPacket payload, ServiceAttribute options)
     {
         var cipher = options.EncryptType switch
         {
@@ -55,11 +57,47 @@ internal class ServicePacker(BotContext context) : StructBase(context)
         writer.Write(sso.Sequence);
         writer.Write((byte)0);
         writer.Write(Keystore.Uin.ToString(), Prefix.Int32 | Prefix.WithPrefix);
-        writer.Write(cipher, Prefix.Int32 | Prefix.WithPrefix);
+        writer.Write(cipher);
         
         writer.ExitLengthBarrier<int>(true);
         
         return writer.ToArray();
+    }
+
+    public ReadOnlySpan<byte> Parse(ReadOnlySpan<byte> input)
+    {
+        var reader = new BinaryPacket(input);
+        
+        uint length = reader.ReadUInt32();
+        int protocol = reader.ReadInt32();
+        var authFlag = (EncryptType)reader.ReadByte();
+        byte dummy = reader.ReadByte();
+        
+        int uinLength = reader.ReadInt32();
+        Span<char> uin = stackalloc char[uinLength - 4];
+        reader.ReadString(uin);
+
+        var decrypted = reader.ReadBytes();
+        
+        switch (authFlag)
+        {
+            case EncryptType.NoEncrypt:
+                break;
+            case EncryptType.EncryptEmpty:
+                var span = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(decrypted), decrypted.Length);
+                TeaProvider.Decrypt(span, span, EmptyD2Key.Span);
+                decrypted = decrypted[((decrypted[0] & 7) + 3)..^7];
+                break;
+            case EncryptType.EncryptD2Key:
+                span = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(decrypted), decrypted.Length);
+                TeaProvider.Decrypt(span, span, Keystore.WLoginSigs.D2Key);
+                decrypted = decrypted[((decrypted[0] & 7) + 3)..];
+                break;
+            default:
+                throw new InvalidOperationException($"Unrecognized auth flag: {authFlag}");
+        }
+
+        return decrypted;
     }
 }
 

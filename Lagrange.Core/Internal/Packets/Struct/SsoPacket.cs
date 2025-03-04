@@ -2,7 +2,7 @@ using System.Threading.Tasks.Sources;
 
 namespace Lagrange.Core.Internal.Packets.Struct;
 
-internal readonly struct SsoPacket(string command, int sequence, int retCode, string extra)
+internal class SsoPacket(string command, int sequence, int retCode, string extra)
 {
     public ReadOnlyMemory<byte> Data { get; }
 
@@ -17,7 +17,7 @@ internal readonly struct SsoPacket(string command, int sequence, int retCode, st
     public SsoPacket(string command, ReadOnlyMemory<byte> data, int sequence) : this(command, sequence, 0, string.Empty) => Data = data;
 }
 
-internal class SsoPacketValueTaskSource : IValueTaskSource<SsoPacket>
+internal class SsoPacketValueTaskSource : IValueTaskSource<SsoPacket> 
 {
     private ManualResetValueTaskSourceCore<SsoPacket> _core;
     

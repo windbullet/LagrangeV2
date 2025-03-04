@@ -16,7 +16,7 @@ internal abstract class OidbService<T, TRequest, TResponse> : BaseService<T> whe
         throw new NotImplementedException();
     }
 
-    protected override Task<ReadOnlyMemory<byte>> Build(T input, BotContext context)
+    protected override ValueTask<ReadOnlyMemory<byte>> Build(T input, BotContext context)
     {
         throw new NotImplementedException();
     }

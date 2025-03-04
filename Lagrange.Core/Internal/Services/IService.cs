@@ -6,5 +6,5 @@ internal interface IService
 {
     public ValueTask<ProtocolEvent?> Parse(ReadOnlyMemory<byte> input, BotContext context);
     
-    public Task<ReadOnlyMemory<byte>> Build(ProtocolEvent input, BotContext context);
+    public ValueTask<ReadOnlyMemory<byte>> Build(ProtocolEvent input, BotContext context);
 }

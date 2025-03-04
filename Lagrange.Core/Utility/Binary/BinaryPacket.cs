@@ -47,6 +47,18 @@ internal ref struct BinaryPacket
         _buffer = ref reference;
     }
     
+    public BinaryPacket(ReadOnlySpan<byte> buffer)
+    {
+        Debug.Assert(buffer.Length > 0, "Buffer length must be greater than 0");
+
+        _offset = 0;
+        _capacity = buffer.Length;
+
+        ref var reference = ref Unsafe.AsRef(in buffer.GetPinnableReference());
+        _span = buffer.ToArray();
+        _buffer = ref reference;
+    }
+    
     /// <summary>
     /// Create a Packet for write by using <see cref="ArrayPool{T}.Shared.Rent"/>
     /// </summary>
@@ -195,6 +207,14 @@ internal ref struct BinaryPacket
         
         return buffer;
     }
+
+    public ReadOnlySpan<byte> ReadBytes()
+    {
+        var buffer = _span[_offset..];
+        Increment(buffer.Length);
+        
+        return buffer;
+    }
     
     public long ReadInt64()
     {
@@ -239,6 +259,21 @@ internal ref struct BinaryPacket
     {
         _span[_offset..].CopyTo(buffer);
         Increment(buffer.Length);
+    }
+    
+    public void ReadString(scoped Span<char> buffer)
+    {
+        int byteCount = Encoding.UTF8.GetChars(_span[_offset..], buffer);
+        Encoding.UTF8.GetChars(_span[_offset..], buffer);
+        Increment(byteCount);
+    }
+
+    public string ReadString(Prefix flag)
+    {
+        int length = ReadLength(flag);
+        var buffer = _span.Slice(_offset, length);
+        Increment(length);
+        return Encoding.UTF8.GetString(buffer);
     }
     
     public ushort ReadUInt16()
@@ -374,6 +409,13 @@ internal ref struct BinaryPacket
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> CreateReadOnlySpan() => _span[.._offset];
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<byte> CreateSpan(int length)
+    {
+        if (_offset + length > _capacity) GrowSize(length);
+        return _span.Slice(_offset, length);
+    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()

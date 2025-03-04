@@ -1,9 +1,16 @@
+using Lagrange.Core.Internal.Packets.Struct;
+
 namespace Lagrange.Core.Internal.Services;
 
 [AttributeUsage(AttributeTargets.Class)]
-internal class ServiceAttribute(string command, ServiceOptions? options = null) : Attribute
+internal class ServiceAttribute(
+    string command, 
+    RequestType requestType = RequestType.D2Auth,
+    EncryptType encryptType = EncryptType.EncryptD2Key) : Attribute
 {
     public string Command { get; } = command;
     
-    public ServiceOptions Options { get; } = options ?? ServiceOptions.Default;
+    public RequestType RequestType { get; } = requestType;
+    
+    public EncryptType EncryptType { get; } = encryptType;
 }

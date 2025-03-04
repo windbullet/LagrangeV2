@@ -1,0 +1,137 @@
+using System.Collections.Frozen;
+using System.Reflection;
+using Lagrange.Core.Events;
+using Lagrange.Core.Internal.Events;
+using Lagrange.Core.Internal.Logic;
+using Lagrange.Core.Internal.Packets.Struct;
+
+namespace Lagrange.Core.Internal.Context;
+
+internal class EventContext
+{
+    private readonly BotContext _context;
+    
+    private readonly FrozenDictionary<Type, List<ILogic>> _events;
+
+    private readonly FrozenDictionary<Type, ILogic> _logics;
+
+    public EventContext(BotContext context)
+    {
+        var events = new Dictionary<Type, List<ILogic>>();
+        var logics = new Dictionary<Type, ILogic>();
+        
+        foreach (var type in typeof(ILogic).Assembly.GetTypes())
+        {
+            if (type.GetInterfaces().Contains(typeof(ILogic)) && Activator.CreateInstance(type, context) is ILogic instance)
+            {
+                foreach (var @event in type.GetCustomAttributes<EventSubscribeAttribute>())
+                {
+                    if (!events.TryGetValue(@event.EventType, out var list))
+                    {
+                        list = [];
+                        events.Add(@event.EventType, list);
+                    }
+                    
+                    list.Add(instance);
+                }
+                
+                logics[type] = instance;
+            }
+        }
+        
+        _context = context;
+        _events = events.ToFrozenDictionary();
+        _logics = logics.ToFrozenDictionary();
+    }
+    
+    public async ValueTask<T?> SendEvent<T>(T @event) where T : ProtocolEvent
+    {
+        try
+        {
+            await HandleOutgoingEvent(@event);
+            var (frame, attribute) =  await _context.ServiceContext.Resolve(@event);
+            if (frame.Sequence == 0)
+            {
+                // TODO: Log
+                return null;
+            }
+            
+            var @return = await _context.PacketContext.SendPacket(frame, attribute);
+            var resolved = await _context.ServiceContext.Resolve(@return);
+            
+            if (resolved is T result)
+            {
+                await HandleIncomingEvent(result);
+                return result;
+            }
+        }
+        catch (Exception e)
+        {
+            // TODO: Log
+        }
+
+        return null;
+    }
+    
+    private async ValueTask HandleIncomingEvent(ProtocolEvent @event)
+    {
+        if (_events.TryGetValue(@event.GetType(), out var logics))
+        {
+            foreach (var logic in logics)
+            {
+                try
+                {
+                    await logic.Incoming(@event);
+                }
+                catch (Exception e)
+                {
+                    // TODO: Log
+                }
+            }
+        }
+    }
+
+    private async ValueTask HandleOutgoingEvent(ProtocolEvent @event)
+    {
+        if (_events.TryGetValue(@event.GetType(), out var logics))
+        {
+            foreach (var logic in logics)
+            {
+                try
+                {
+                    await logic.Outgoing(@event);
+                }
+                catch (Exception e)
+                {
+                    // TODO: Log
+                }
+            }
+        }
+    }
+    
+    public async ValueTask HandleOutgoingEvent(EventBase @event)
+    {
+        if (_events.TryGetValue(@event.GetType(), out var logics))
+        {
+            foreach (var logic in logics)
+            {
+                try
+                {
+                    await logic.Outgoing(@event);
+                }
+                catch (Exception e)
+                {
+                    // TODO: Log
+                }
+            }
+        }
+    }
+
+    public async Task HandleServerPacket(SsoPacket packet)
+    {
+        var @event = await _context.ServiceContext.Resolve(packet);
+        if (@event is not null) await HandleIncomingEvent(@event);
+    }
+    
+    public T GetLogic<T>() where T : ILogic => (T)_logics[typeof(T)];
+}

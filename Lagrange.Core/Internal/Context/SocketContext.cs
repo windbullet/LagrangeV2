@@ -30,7 +30,7 @@ internal class SocketContext : IClientListener, IDisposable
 
     public uint GetPacketLength(ReadOnlySpan<byte> header) => BinaryPrimitives.ReadUInt32BigEndian(header);
 
-    public void OnRecvPacket(ReadOnlySpan<byte> packet) => _context.PacketContext.ReceivePacket(packet);
+    public void OnRecvPacket(ReadOnlySpan<byte> packet) => _context.PacketContext.DispatchPacket(packet);
 
     public void OnDisconnect()
     {
@@ -50,7 +50,7 @@ internal class SocketContext : IClientListener, IDisposable
         if (_config.GetOptimumServer) await SortServers(servers);
         bool connected = await _client.Connect(servers[0]);
         
-        if (connected) _context.LogInformation(Tag, $"Connected to the server {servers[0]}");
+        if (connected) _context.LogInfo(Tag, $"Connected to the server {servers[0]}");
         else _context.LogError(Tag, $"Failed to connect to the server {servers[0]}");
         
         return connected;

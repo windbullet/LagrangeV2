@@ -14,7 +14,7 @@ internal class PacketContext(BotContext context)
     private readonly ServicePacker _servicePacker = new(context);
     private readonly IBotSignProvider _signProvider = context.Config.SignProvider ?? new DefaultBotSignProvider(context.Config.Protocol, context.AppInfo);
 
-    public ValueTask<SsoPacket> SendPacket(SsoPacket packet, ServiceOptions options)
+    public ValueTask<SsoPacket> SendPacket(SsoPacket packet, ServiceAttribute options)
     {
         var tcs = new SsoPacketValueTaskSource();
         _pendingTasks.TryAdd(packet.Sequence, tcs);
@@ -30,21 +30,21 @@ internal class PacketContext(BotContext context)
                     if (IBotSignProvider.IsWhiteListCommand(packet.Command))
                     {
                         var secInfo = await _signProvider.GetSecSign(_keystore.Uin, packet.Command, packet.Sequence, packet.Data);
-                        var sso = _ssoPacker.BuildProtocol12(ref packet, secInfo);
-                        frame = _servicePacker.BuildProtocol12(ref sso, options);
+                        var sso = _ssoPacker.BuildProtocol12(packet, secInfo);
+                        frame = _servicePacker.BuildProtocol12(sso, options);
                     }
                     else
                     {
-                        var sso = _ssoPacker.BuildProtocol12(ref packet, null);
-                        frame = _servicePacker.BuildProtocol12(ref sso, options);
+                        var sso = _ssoPacker.BuildProtocol12(packet, null);
+                        frame = _servicePacker.BuildProtocol12(sso, options);
                     }
 
                     break;
                 }
                 case RequestType.Simple:
                 {
-                    var sso = _ssoPacker.BuildProtocol13(ref packet);
-                    frame = _servicePacker.BuildProtocol13(ref packet, ref sso, options);
+                    var sso = _ssoPacker.BuildProtocol13(packet);
+                    frame = _servicePacker.BuildProtocol13(packet, sso, options);
                     break;
                 }
                 default:
@@ -58,14 +58,12 @@ internal class PacketContext(BotContext context)
         
         return new ValueTask<SsoPacket>(tcs, 0);
     }
-    
-    public void ReceivePacket(ReadOnlySpan<byte> buffer)
-    {
-        
-    }
 
-    public void DispatchPacket(ref SsoPacket sso)
+    public void DispatchPacket(ReadOnlySpan<byte> buffer)
     {
+        var service = _servicePacker.Parse(buffer);
+        var sso = _ssoPacker.Parse(service);
+        
         if (_pendingTasks.TryRemove(sso.Sequence, out var tcs))
         {
             if (sso is { RetCode: not 0, Extra: var extra })
@@ -80,7 +78,7 @@ internal class PacketContext(BotContext context)
         }
         else
         {
-            // TODO: Server Allocated Packet
+            _ = context.EventContext.HandleServerPacket(sso);
         }
     }
 }

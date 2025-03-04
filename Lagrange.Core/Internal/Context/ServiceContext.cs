@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Reflection;
 using Lagrange.Core.Internal.Events;
@@ -14,29 +13,33 @@ internal class ServiceContext
     private int _sequence = Random.Shared.Next(5000000, 9900000);
     
     private readonly FrozenDictionary<string, IService> _services;
-    private readonly FrozenDictionary<Type, List<(ServiceAttribute Attribute, IService Instance)>> _servicesEventType;
-    
-    private readonly ConcurrentDictionary<string, int> _sessionSequence = new();
+    private readonly FrozenDictionary<Type, (ServiceAttribute Attribute, IService Instance)> _servicesEventType;
+
     private readonly BotContext _context;
     
     public ServiceContext(BotContext context)
     {
         _context = context;
         var services = new Dictionary<string, IService>();
-        var servicesEventType = new Dictionary<Type, List<(ServiceAttribute, IService)>>();
+        var servicesEventType = new Dictionary<Type, (ServiceAttribute, IService)>();
 
         foreach (var type in typeof(IService).Assembly.GetTypes()) 
         {
-            if (type.GetInterfaces().Contains(typeof(IService)) && !type.IsAbstract) servicesEventType[type] = [];
-
-            if (type.GetCustomAttribute<ServiceAttribute>() is { } attr)
+            if (type.GetCustomAttribute<ServiceAttribute>() is { } attr && type.GetInterfaces().Contains(typeof(IService)) && !type.IsAbstract)
             {
                 var service = (IService?)Activator.CreateInstance(type) ?? throw new InvalidOperationException("Failed to create service instance");
                 services[attr.Command] = service;
                 
                 foreach (var attribute in type.GetCustomAttributes<EventSubscribeAttribute>())
                 {
-                    servicesEventType[attribute.EventType].Add((attr, service));
+                    if (!servicesEventType.TryGetValue(attribute.EventType, out var list))
+                    {
+                        servicesEventType[attribute.EventType] = (attr, service);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Multiple services for event type: {attribute.EventType}");
+                    }
                 }
             }
         }
@@ -45,7 +48,7 @@ internal class ServiceContext
         _servicesEventType = servicesEventType.ToFrozenDictionary();
     }
 
-    public ValueTask<ProtocolEvent?> Resolve(in SsoPacket ssoPacket)
+    public ValueTask<ProtocolEvent?> Resolve(SsoPacket ssoPacket)
     {
         if (!_services.TryGetValue(ssoPacket.Command, out var service))
         {
@@ -56,22 +59,14 @@ internal class ServiceContext
         return service.Parse(ssoPacket.Data, _context);
     }
 
-    public async ValueTask<(SsoPacket, ServiceOptions)[]> Resolve(ProtocolEvent @event)
+    public async ValueTask<(SsoPacket, ServiceAttribute)> Resolve(ProtocolEvent @event)
     {
-        if (!_servicesEventType.TryGetValue(@event.GetType(), out var handlers)) return [];
-
-        var results = new (SsoPacket, ServiceOptions)[handlers.Count];
-        for (var i = 0; i < handlers.Count; i++)
-        {
-            var (attr, service) = handlers[i];
-            results[i] = (new SsoPacket(attr.Command, await service.Build(@event, _context), GetNewSequence()), attr.Options);
-        }
+        if (!_servicesEventType.TryGetValue(@event.GetType(), out var handler)) return default;
         
-        return results;
+        var (attr, service) = handler;
+        return (new SsoPacket(attr.Command, await service.Build(@event, _context), GetNewSequence()), attr);
     }
-    
-    public int SessionSequence(string sessionId) => _sessionSequence.GetOrAdd(sessionId, GetNewSequence());
-    
+
     private int GetNewSequence()
     {
         Interlocked.CompareExchange(ref _sequence, 5000000, 9900000);
