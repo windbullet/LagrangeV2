@@ -19,6 +19,7 @@ public class BotContext
         PacketContext = new PacketContext(this);
         ServiceContext = new ServiceContext(this);
         SocketContext = new SocketContext(this);
+        EventContext = new EventContext(this);
     }
 
     public BotConfig Config { get; }
@@ -34,6 +35,7 @@ public class BotContext
     internal PacketContext PacketContext { get; }
     internal ServiceContext ServiceContext { get; }
     internal SocketContext SocketContext { get; }
+    internal EventContext EventContext { get; }
 
     #region Shortcut Methods
 
@@ -43,7 +45,7 @@ public class BotContext
     
     public void LogWarning(string tag, string message) => EventInvoker.PostEvent(new BotLogEvent(tag, LogLevel.Warning, message));
     
-    public void LogInformation(string tag, string message) => EventInvoker.PostEvent(new BotLogEvent(tag, LogLevel.Information, message));
+    public void LogInfo(string tag, string message) => EventInvoker.PostEvent(new BotLogEvent(tag, LogLevel.Information, message));
     
     public void LogDebug(string tag, string message) => EventInvoker.PostEvent(new BotLogEvent(tag, LogLevel.Debug, message));
     
